@@ -7,7 +7,9 @@
  * trick programs into diabling buffering, or otherwise acting as if they are
  * interactive, while still capturing their output.
  *
- * Currently, standard input is not redirected through the PTY.
+ * UPDATES:
+ * 25 Nov 2013: Input now goes through the PTY as well. [Chris Bouchard]
+ *
  */
 
 #define _GNU_SOURCE 1
