@@ -13,9 +13,13 @@ they are interactive, while still capturing their output.
 COMPILING:
 ----------
 
-To compile terminator, simply run the given makefile. For now, the makefile
-assumes you have GCC installed in your path. In the next release we will
-probably move to an autoconf driven build.
+Terminator is build using autoconf. Run the following to build and install
+terminator:
+
+    autoreconf --install
+    ./configure
+    make
+    make install
 
 RUNNING:
 --------
