@@ -31,5 +31,4 @@ config.sub
 configure
 depcomp
 install-sh
-m4
 missing
