@@ -13,6 +13,23 @@
 *.dylib
 
 # Executables
+terminator
 *.exe
 *.out
 *.app
+
+# Autoconf
+.dirstamp
+.deps
+Makefile.in
+aclocal.m4
+autom4te.cache
+config.guess
+config.log
+config.status
+config.sub
+configure
+depcomp
+install-sh
+m4
+missing
