@@ -172,9 +172,11 @@ static void *redirection_thread_fn(void *arg) {
 
     struct pollfd poll_fds[2];
 
-    char buffer[BUFFER_SIZE];
+    char *buffer;
     size_t buffer_length = 0;
     size_t buffer_offset = 0;
+
+    ASSERT_NONZERO(buffer = malloc(BUFFER_SIZE));
 
     poll_fds[0].fd = info->in_fd;
     poll_fds[0].events = POLLIN;
@@ -264,6 +266,8 @@ static void *redirection_thread_fn(void *arg) {
             }
         }
     }
+
+    free(buffer);
 
     if (info->end_all) {
 #ifdef ASSERT_DEBUG
