@@ -22,8 +22,10 @@ terminator
 .dirstamp
 .deps
 Makefile.in
+Makefile
 aclocal.m4
 autom4te.cache
+compile
 config.guess
 config.log
 config.status
