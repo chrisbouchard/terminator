@@ -62,12 +62,12 @@ do { \
 #define ASSERT_ZERO_WITH_MESSAGE(X, MSG) \
     ASSERT_WITH_MESSAGE((X) == 0, MSG)
 
-/* Assert that X is nonnegative. Behaves as ASSERT if the assertion fails. */
+/* Assert that X is nonzero. Behaves as ASSERT if the assertion fails. */
 #define ASSERT_NONZERO(X) \
     ASSERT((X) != 0)
 
-/* Assert that X is nonnegative. Behaves as ASSERT_WITH_MESSAGE if the
- * assertion fails. */
+/* Assert that X is nonzero. Behaves as ASSERT_WITH_MESSAGE if the assertion
+ * fails. */
 #define ASSERT_NONZERO_WITH_MESSAGE(X, MSG) \
     ASSERT_WITH_MESSAGE((X) != 0, MSG)
 
