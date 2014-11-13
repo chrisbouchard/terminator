@@ -8,6 +8,7 @@
  * interactive, while still capturing their output.
  *
  * UPDATES:
+ * 13 Nov 2014: Skip the STREAMS stuff if it's not available. [Chris Bouchard]
  * 25 Nov 2013: Input now goes through the PTY as well. [Chris Bouchard]
  *
  */
