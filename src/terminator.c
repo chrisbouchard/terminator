@@ -21,9 +21,14 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stropts.h>
 #include <termios.h>
 #include <unistd.h>
+
+/* In some environments, we'll be dealing with the STREAMS extension. If it's
+ * available, include it. */
+#if defined(_XOPEN_STREAMS) && _XOPEN_STREAMS != -1
+#include <stropts.h>
+#endif
 
 #include <sys/ioctl.h>
 #include <sys/types.h>
@@ -58,6 +63,10 @@ static void *redirection_thread_fn(void *arg);
 static void cfmakeraw(struct termios *termios_p);
 #endif
 
+#if !defined(_XOPEN_STREAMS) || _XOPEN_STREAMS == -1
+static int isastream(int fd);
+#endif
+
 
 int main(int argc, char **argv) {
     /* The master and slave PTY file descriptors, respectively */
@@ -90,12 +99,16 @@ int main(int argc, char **argv) {
     if (pid == 0) {
         struct termios fds_settings;
 
+        /* In some environments, we'll be dealing with the STREAMS extension.
+         * If it's available, see if we need to do any configuration. */
+#if defined(_XOPEN_STREAMS)  && _XOPEN_STREAMS != -1
         /* System V implementations need STREAMS configuration for the slave
          * PTY. */
         if (isastream(fds)) {
             ASSERT_NONNEG(ioctl(fds, I_PUSH, "ptem"));
             ASSERT_NONNEG(ioctl(fds, I_PUSH, "ldterm"));
         }
+#endif
 
         /* Enable raw mode on the slave PTY. */
         ASSERT_ZERO(tcgetattr(fds, &fds_settings));
@@ -205,7 +218,9 @@ static void *redirection_thread_fn(void *arg) {
             buffer_length = 0;
         }
 
-        if (keep_going && !found_eof && poll_fds[0].revents & POLLIN && buffer_length == 0) {
+        if (keep_going && !found_eof && poll_fds[0].revents & POLLIN &&
+                buffer_length == 0
+           ) {
             size_t n_read;
 
             ASSERT_NONNEG(n_read = read(poll_fds[0].fd, buffer, BUFFER_SIZE));
@@ -228,28 +243,39 @@ static void *redirection_thread_fn(void *arg) {
             if (buffer_length > 0) {
                 size_t n_written;
 
-                ASSERT_NONNEG(n_written = write(poll_fds[1].fd, buffer + buffer_offset,
-                                                buffer_length));
+                ASSERT_NONNEG(n_written = write(
+                    poll_fds[1].fd, buffer + buffer_offset, buffer_length
+                ));
                 ASSERT_ZERO(fsync(poll_fds[1].fd));
 
                 buffer_offset += n_written;
                 buffer_length -= n_written;
 
 #ifdef ASSERT_DEBUG
-                fprintf(stderr, "%d: Wrote %d bytes on fd %d. %d bytes remain in buffer.\n",
-                        info->id, n_written, poll_fds[1].fd, buffer_length);
+                fprintf(stderr, "%d: Wrote %d bytes on fd %d. ",
+                    info->id, n_written, poll_fds[1].fd
+                );
+                fprintf(stderr, "%d bytes remain in buffer.\n",
+                    buffer_length
+                );
 #endif
             }
             else if (found_eof) {
                 char eot_char = 0x04;
 
-                if (info->send_eot && (isastream(poll_fds[1].fd) || isatty(poll_fds[1].fd))) {
+                if (info->send_eot && (isastream(poll_fds[1].fd) ||
+                                       isatty(poll_fds[1].fd))
+                   ) {
                     ASSERT_NONNEG(write(poll_fds[1].fd, &eot_char, 1));
                     ASSERT_ZERO(fsync(poll_fds[1].fd));
 
 #ifdef ASSERT_DEBUG
-                    fprintf(stderr, "%d: Wrote EOT on fd %d. %d bytes remain in buffer.\n",
-                            info->id, poll_fds[1].fd, buffer_length);
+                    fprintf(stderr, "%d: Wrote EOT on fd %d. ",
+                        info->id, poll_fds[1].fd
+                    );
+                    fprintf(stderr, "%d bytes remain in buffer.\n",
+                        buffer_length
+                    );
 #endif
                 }
                 else {
@@ -257,8 +283,12 @@ static void *redirection_thread_fn(void *arg) {
                     ASSERT_ZERO(fsync(poll_fds[1].fd));
 
 #ifdef ASSERT_DEBUG
-                    fprintf(stderr, "%d: Wrote 0 bytes on fd %d. %d bytes remain in buffer.\n",
-                            info->id, poll_fds[1].fd, buffer_length);
+                    fprintf(stderr, "%d: Wrote 0 bytes on fd %d. ",
+                        info->id, poll_fds[1].fd
+                    );
+                    fprintf(stderr, "%d bytes remain in buffer.\n",
+                        buffer_length
+                    );
 #endif
                 }
 
@@ -295,6 +325,16 @@ static void cfmakeraw(struct termios *termios_p) {
     termios_p->c_lflag &= ~(ECHO | ECHONL | /* ICANON |*/ ISIG | IEXTEN);
     termios_p->c_cflag &= ~(CSIZE | PARENB);
     termios_p->c_cflag |= CS8;
+}
+#endif
+
+
+#if !defined(_XOPEN_STREAMS) || _XOPEN_STREAMS == -1
+/* Check if a file descriptor is actually a stream. If the OS doesn't support
+ * the STREAMS extension, this cannot be so. In that case, we define this
+ * function to always be false. */
+static int isastream(int fd) {
+    return 0;
 }
 #endif
 
